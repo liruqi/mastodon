@@ -74,6 +74,8 @@ class Account < ApplicationRecord
   validates_with UnreservedUsernameValidator, if: -> { local? && will_save_change_to_username? }
   validates :display_name, length: { maximum: 30 }, if: -> { local? && will_save_change_to_display_name? }
   validates :note, length: { maximum: 160 }, if: -> { local? && will_save_change_to_note? }
+  validates :fields, length: { maximum: 4 }, if: -> { local? && will_save_change_to_fields? }
+  validates_associated :fields
 
   # Timelines
   has_many :stream_entries, inverse_of: :account, dependent: :destroy
@@ -264,14 +266,17 @@ class Account < ApplicationRecord
     shared_inbox_url.presence || inbox_url
   end
 
-  class Field < ActiveModelSerializers::Model
-    attributes :name, :value, :account, :errors
+  class Field
+    include ActiveModel::Model
+
+    attr_accessor :name, :value, :account
+
+    validates :name, :value, length: { maximum: 255 }
 
     def initialize(account, attr)
       @account = account
       @name    = attr['name']
       @value   = attr['value']
-      @errors  = {}
     end
 
     def to_h
